@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#061e2c">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Ледяной рубеж — оборона тюленя</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+    <canvas id="game" aria-label="Игровое поле: тюлень обороняет ледяной остров"></canvas>
+    <div class="world-vignette"></div>
+
+    <header id="hud" class="hud">
+      <div class="hud-brand">
+        <div class="brand-mark" id="brandMark"></div>
+        <div class="brand-copy">
+          <b>ЛЕДЯНОЙ РУБЕЖ</b>
+          <span>FLOW DEFENSE</span>
+        </div>
+      </div>
+      <div class="hud-stats">
+        <div class="stat wave-stat">
+          <span class="stat-label">ВОЛНА</span>
+          <strong id="waveValue">1 / 15</strong>
+          <span id="waveState">подготовка</span>
+        </div>
+        <div class="stat fish-stat">
+          <span class="fish-icon" id="fishIconHud"></span>
+          <strong id="fishValue">150</strong>
+          <span class="stat-label">РЫБА</span>
+        </div>
+        <div class="ice-stat">
+          <div class="ice-copy"><span>ЛЁД</span><b id="iceText">100 / 100</b></div>
+          <div class="ice-track"><i id="iceFill"></i></div>
+        </div>
+        <div class="stat score-stat">
+          <span class="stat-label">СЧЁТ</span>
+          <strong id="scoreValue">0</strong>
+        </div>
+      </div>
+      <div class="hud-actions">
+        <button class="icon-btn" id="btnTiltQuick" title="Наклон" aria-label="Наклон">
+          <span id="tiltQuickIcon"></span>
+        </button>
+        <button class="icon-btn" id="btnSound" title="Звук" aria-label="Звук">
+          <span id="soundIcon"></span>
+        </button>
+        <button class="icon-btn" id="btnHelp" title="Как играть" aria-label="Как играть">?</button>
+        <button class="icon-btn" id="btnPause" title="Пауза" aria-label="Пауза">
+          <span class="pause-bars"></span>
+        </button>
+      </div>
+    </header>
+
+    <div id="waveBanner" class="wave-banner">
+      <span id="waveBannerKicker">ВОЛНА 1</span>
+      <b id="waveBannerTitle">Разведка</b>
+      <em id="waveBannerSub">Косатки на горизонте</em>
+    </div>
+
+    <div id="toast" class="toast" role="status"></div>
+    <div id="buildHint" class="build-hint"></div>
+
+    <div id="nextWave" class="next-wave">
+      <span id="nextWaveLabel">Подготовка · 20с</span>
+      <button id="btnNextWave">В бой <i>›</i></button>
+    </div>
+
+    <div class="touch-controls">
+      <div id="joystick" class="joystick" aria-label="Джойстик движения">
+        <div class="joy-ring"></div>
+        <div class="joy-arrows">
+          <i></i><i></i><i></i><i></i>
+        </div>
+        <div id="joyKnob" class="joy-knob"></div>
+      </div>
+    </div>
+
+    <button id="btnRoar" class="roar-btn" aria-label="Ледяной рёв">
+      <span class="roar-icon" id="roarIcon"></span>
+      <span class="roar-label">РЁВ</span>
+      <span class="roar-cd" id="roarCd"></span>
+    </button>
+
+    <section id="dock" class="dock" aria-label="Магазин обороны">
+      <div class="dock-head">
+        <div class="dock-tabs" role="tablist" aria-label="Категории">
+          <button class="tab active" data-cat="towers" role="tab">Пушки</button>
+          <button class="tab" data-cat="traps" role="tab">Ловушки</button>
+          <button class="tab" data-cat="floe" role="tab">Льдина</button>
+          <button class="tab" data-cat="seal" role="tab">Тюлень</button>
+        </div>
+        <div class="dock-tip" id="dockTip">Выберите пушку, затем гнездо на льдине</div>
+        <span class="move-hint">WASD · движение &nbsp; ПРОБЕЛ · рёв</span>
+      </div>
+      <div id="cards" class="cards" role="tabpanel"></div>
+    </section>
+
+    <aside id="towerPanel" class="tower-panel hidden" aria-live="polite">
+      <div class="tp-head">
+        <div class="tp-icon" id="tpIcon"></div>
+        <div>
+          <span class="tp-kicker">ГНЕЗДО ЗАЩИТЫ</span>
+          <b id="tpName">Снежкомёт</b>
+        </div>
+        <button id="tpClose" class="tp-close" aria-label="Закрыть">×</button>
+      </div>
+      <div id="tpStats" class="tp-stats"></div>
+      <div class="tp-actions">
+        <button id="tpUpgrade" class="btn btn-primary">Улучшить</button>
+        <button id="tpSell" class="btn btn-ghost">Продать</button>
+      </div>
+    </aside>
+
+    <div id="startScreen" class="screen start-screen">
+      <div class="start-aurora"></div>
+      <div class="start-content">
+        <div class="eyebrow"><span></span> АРКТИЧЕСКАЯ ОБОРОНА <span></span></div>
+        <h1>ЛЕДЯНОЙ<br><i>РУБЕЖ</i></h1>
+        <p class="lead">Ты — самый храбрый тюлень Северного полюса.<br>Косатки идут за твоей льдиной. Пора строить оборону.</p>
+        <div class="feature-row">
+          <div class="feature"><b>10</b><span>видов пушек</span></div>
+          <div class="feature"><b>6</b><span>видов ловушек</span></div>
+          <div class="feature"><b>15</b><span>волн косаток</span></div>
+        </div>
+        <button id="btnStart" class="btn btn-hero">НАЧАТЬ ОБОРОНУ <i>›</i></button>
+        <button id="btnHow" class="text-btn">Как играть</button>
+        <div class="start-foot">
+          <span id="bestStart">Лучший результат: 0</span>
+          <span class="device-note">Телефон · планшет · компьютер</span>
+        </div>
+      </div>
+      <div class="start-seal" aria-hidden="true">
+        <div class="mini-island">
+          <span class="mini-seal"></span>
+          <span class="mini-orca o1"></span>
+          <span class="mini-orca o2"></span>
+          <span class="mini-orca o3"></span>
+        </div>
+      </div>
+    </div>
+
+    <div id="modalOverlay" class="modal-overlay hidden">
+      <div id="modalCard" class="modal-card"></div>
+    </div>
+
+    <div id="endScreen" class="screen end-screen hidden">
+      <div class="end-card">
+        <span id="endKicker" class="end-kicker">ОБОРОНА ВЫДЕРЖАНА</span>
+        <h2 id="endTitle">ЛЬДИНА СПАСЕНА</h2>
+        <p id="endText">Тюлень гордо смотрит на горизонт. Косатки уплывают ни с чем.</p>
+        <div class="end-stats">
+          <div><span>ВОЛНЫ</span><b id="endWaves">15</b></div>
+          <div><span>СЧЁТ</span><b id="endScore">0</b></div>
+          <div><span>ПОСТРОЕНО</span><b id="endBuilt">0</b></div>
+        </div>
+        <div class="end-actions">
+          <button id="btnAgain" class="btn btn-primary">ИГРАТЬ СНОВА</button>
+          <button id="btnMenu" class="btn btn-ghost">В МЕНЮ</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="rotateHint" class="rotate-hint">
+      <span class="rotate-icon"></span>
+      <b>Поверните устройство</b>
+      <small>Горизонтальный экран удобнее для обороны</small>
+    </div>
+  </div>
+  <script src="game.js"></script>
+</body>
+</html>
