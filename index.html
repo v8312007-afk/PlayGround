@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#04121c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Ледяной Дозор — тюлень против косаток</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%230b3346'/%3E%3Cellipse cx='16' cy='18' rx='9' ry='6' fill='%23dff8ff'/%3E%3Ccircle cx='22' cy='15' r='5' fill='%23eefcff'/%3E%3Ccircle cx='24' cy='14' r='1.2' fill='%230a1a24'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<canvas id="game" aria-label="Поле игры"></canvas>
+
+<div id="hud">
+  <div class="hud-top">
+    <div class="hud-left">
+      <div class="pill wave-pill"><span class="kicker">ВОЛНА</span><b id="waveNum">1</b></div>
+      <div class="best">рекорд <b id="bestNum">0</b></div>
+    </div>
+    <div class="integrity-wrap">
+      <div class="integrity-label">
+        <span class="lbl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 3v7c0 5-4 8-8 10-4-2-8-5-8-10V5z"/></svg><span>ПРОЧНОСТЬ ЛЬДИНЫ</span></span>
+        <b id="icePct">100%</b>
+      </div>
+      <div class="integrity-track"><div id="iceFill"></div></div>
+    </div>
+    <div class="hud-right">
+      <div class="pill fish-pill"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M2.6 12c2.7-3.8 6.6-5.7 10.4-3.8L17.4 5v14l-4.4-3.2C9.2 17.7 5.3 15.8 2.6 12Zm11.7-.9a1.1 1.1 0 1 0 0 2.2 1.1 1.1 0 0 0 0-2.2Z"/></svg><b id="fishNum">160</b></div>
+      <button id="soundBtn" class="icon-btn" aria-label="Звук">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M17 8.5a5 5 0 0 1 0 7"/></svg>
+      </button>
+      <button id="pauseBtn" class="icon-btn" aria-label="Пауза">
+        <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1.3"/><rect x="14" y="5" width="4" height="14" rx="1.3"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <button id="rushBtn"><span>НАЧАТЬ ВОЛНУ</span><b id="rushTime">13с</b></button>
+</div>
+
+<div id="stick"><div class="knob" id="stickKnob"></div><span class="stick-label">ДВИЖЕНИЕ</span></div>
+<button id="roar" aria-label="Рык">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 10v4M8 7v10M12 4v16M16 8v8M20 10v4"/></svg>
+  <b>РЫК</b>
+  <span class="cool" id="roarCool"></span>
+  <span class="cooltxt" id="roarCoolTxt"></span>
+</button>
+
+<div id="dock">
+  <div class="dock-top">
+    <button class="tab active" data-tab="turret">ТУРЕЛИ</button>
+    <button class="tab" data-tab="trap">ЛОВУШКИ</button>
+    <div class="dock-spacer"></div>
+    <button class="meta-btn" id="metaIceBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M3 7l18 10M21 7L3 17"/></svg><span>Льдина</span></button>
+    <button class="meta-btn" id="metaSealBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="7"/><path d="M8 15c0 4 2 6 4 6s4-2 4-6"/></svg><span>Тюлень</span></button>
+  </div>
+  <div class="cards" id="turretCards"></div>
+  <div class="cards hidden" id="trapCards"></div>
+  <div class="dock-hint" id="dockHint">Выберите турель, затем пустой пад на льдине</div>
+</div>
+
+<div id="banner" class="wave-banner"><span class="b-kicker" id="bannerKicker">ВОЛНА</span><span class="b-main" id="bannerMain">1</span><span class="b-sub" id="bannerSub">Косатки приближаются</span></div>
+<div id="toast"></div>
+
+<div id="turretPanel" class="hidden">
+  <div class="tp-head">
+    <div class="tp-icon"><canvas id="tpIcon" width="80" height="80"></canvas></div>
+    <div class="tp-title">
+      <div class="tp-kicker" id="tpKicker">ТУРЕЛЬ</div>
+      <h3 id="tpName">Гарпун</h3>
+      <div class="tp-lvl" id="tpLevel">УРОВЕНЬ 1</div>
+    </div>
+    <button class="tp-close" id="tpClose" aria-label="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </div>
+  <div class="tp-stats" id="tpStats"></div>
+  <div class="tp-actions">
+    <button class="tp-upgrade" id="tpUpgrade">УЛУЧШИТЬ · <b id="tpCost">90</b></button>
+    <button class="tp-sell" id="tpSell">Продать</button>
+  </div>
+</div>
+
+<div id="startScreen" class="overlay">
+  <div class="start-card">
+    <div class="brand">
+      <div class="brand-badge"><canvas id="logoSeal" width="220" height="220"></canvas></div>
+      <div>
+        <div class="eyebrow">АРКТИЧЕСКАЯ ОБОРОНА</div>
+        <h1>ЛЕДЯНОЙ<em>ДОЗОР</em></h1>
+      </div>
+    </div>
+    <p class="start-copy">Косатки идут на твою льдину. Строй турели, ставь ловушки, прокачивай лёд и тюленя — и не дай океану забрать дом.</p>
+    <div class="chips">
+      <span class="chip"><b>6</b> турелей</span>
+      <span class="chip"><b>5</b> ловушек</span>
+      <span class="chip"><b>∞</b> волн</span>
+      <span class="chip">каждая 5-я — <b>Ледокол</b></span>
+    </div>
+    <button id="playBtn" class="play-btn" aria-label="Play">
+      <span>ИГРАТЬ</span>
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+    </button>
+    <div class="start-foot">
+      <button id="soundStart" class="soft-btn" aria-label="Звук"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M17 8.5a5 5 0 0 1 0 7"/></svg><span>Звук</span></button>
+      <button id="tiltStart" class="soft-btn" aria-label="Наклон"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="7" y="3" width="10" height="18" rx="2"/><path d="M10 12h4"/></svg><span>Наклон</span></button>
+      <span class="record">РЕКОРД: <b id="bestStart">0</b></span>
+    </div>
+    <div class="start-hint">Джойстик или WASD · тап по паду — строить · РЫК отбрасывает косаток · на iPhone включите наклон по кнопке</div>
+  </div>
+</div>
+
+<div id="pauseScreen" class="overlay hidden">
+  <div class="small-card">
+    <h2>ПАУЗА</h2>
+    <p>Льдина ждёт. Прокачайте оборону или продолжите бой.</p>
+    <div class="over-stats">
+      <div class="over-stat"><span>ВОЛНА</span><b id="pauseWave">1</b></div>
+      <div class="over-stat"><span>РЫБА</span><b id="pauseFish">0</b></div>
+      <div class="over-stat"><span>ПРОЧНОСТЬ</span><b id="pauseIce">100%</b></div>
+    </div>
+    <div class="btn-row">
+      <button id="resumeBtn" class="big-btn">ПРОДОЛЖИТЬ</button>
+      <button id="pauseMetaBtn" class="big-btn ghost">УЛУЧШЕНИЯ БАЗЫ</button>
+      <div style="display:flex;gap:7px">
+        <button id="soundPause" class="big-btn ghost" style="flex:1" aria-label="Звук">ЗВУК</button>
+        <button id="tiltPause" class="big-btn ghost" style="flex:1" aria-label="Наклон">НАКЛОН</button>
+      </div>
+      <button id="restartBtn" class="big-btn ghost">НАЧАТЬ ЗАНОВО</button>
+    </div>
+  </div>
+</div>
+
+<div id="overScreen" class="overlay hidden">
+  <div class="small-card">
+    <div class="over-emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 2l8 3v7c0 5-4 8-8 10-4-2-8-5-8-10V5z"/><path d="M9 9l6 6M15 9l-6 6"/></svg></div>
+    <h2>ЛЬДИНА РАСКОЛОТА</h2>
+    <p>Косатки пробили оборону. Тюлень уплыл, но остров можно вернуть.</p>
+    <div class="over-stats">
+      <div class="over-stat"><span>ВОЛНА</span><b id="overWave">1</b></div>
+      <div class="over-stat"><span>РЕКОРД</span><b id="overBest">0</b></div>
+      <div class="over-stat"><span>РЫБА</span><b id="overFish">0</b></div>
+    </div>
+    <div class="btn-row">
+      <button id="againBtn" class="big-btn" aria-label="Play">ИГРАТЬ СНОВА</button>
+    </div>
+  </div>
+</div>
+
+<div id="metaModal" class="hidden">
+  <div class="meta-card">
+    <div class="meta-head">
+      <div>
+        <div class="mh-sub">ПРОКАЧКА ОБОРОНЫ</div>
+        <h2 id="metaTitle">Льдина</h2>
+      </div>
+      <button class="tp-close" id="metaClose" aria-label="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <div class="meta-tabs">
+      <button class="meta-tab active" data-meta="ice">ЛЬДИНА</button>
+      <button class="meta-tab" data-meta="seal">ТЮЛЕНЬ</button>
+    </div>
+    <div class="meta-list" id="metaList"></div>
+  </div>
+</div>
+
+<script src="game-data.js"></script>
+<script src="game.js"></script>
+<script src="render.js"></script>
+</body>
+</html>
