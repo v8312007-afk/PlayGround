@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#061923">
+<meta name="description" content="Ледяной Страж — арктическая оборона. Играй за тюленя, строй турели и ловушки, защищай льдину от косаток.">
+<title>Ледяной Страж</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23071f2b'/%3E%3Cpath d='M14 35c0-11 8-17 19-17 12 0 17 7 17 15 0 10-7 15-18 15-11 0-18-4-18-13z' fill='%23d7eef5'/%3E%3Ccircle cx='41' cy='29' r='2.4' fill='%23071f2b'/%3E%3Cpath d='M18 46c8 5 20 5 28 0' stroke='%235fe3ff' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="menu">
+<div id="app">
+  <canvas id="game" aria-label="Игровое поле: ледяной остров и океан"></canvas>
+
+  <div id="hud" class="hud">
+    <div class="hud-top">
+      <div class="hud-left">
+        <div class="wave-pill">
+          <span class="wave-dot"></span>
+          <span id="waveLabel">ВОЛНА 1</span>
+          <span id="waveSub" class="wave-sub">подготовка</span>
+        </div>
+        <div class="seal-meter" title="Здоровье тюленя">
+          <span class="seal-meter-icon">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 14.2c0-4.3 3.3-7.2 7.5-7.2 4.4 0 7.5 2.8 7.5 6.5 0 3.6-3 5.5-7.5 5.5s-7.5-1.6-7.5-4.8Z"/><circle cx="15.8" cy="10.7" r=".9"/></svg>
+          </span>
+          <span class="seal-bar"><i id="sealFill"></i></span>
+        </div>
+      </div>
+      <div class="hud-right">
+        <div class="fish-pill" title="Рыба — валюта для постройки">
+          <svg viewBox="0 0 32 24" aria-hidden="true"><path d="M3 12c4-6 10-8 16-5 4 2 7 4 10 5-3 2-6 4-10 5-6 3-12 1-16-5Z"/><path d="M3 12 0 6v12l3-6Z"/><circle cx="22" cy="10" r="1.3"/></svg>
+          <span id="fishCount">0</span>
+        </div>
+        <button id="pauseBtn" class="icon-btn" aria-label="Пауза">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6v12M16 6v12"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="integrity-wrap">
+      <div class="integrity-label">
+        <span>ПРОЧНОСТЬ ЛЬДА</span>
+        <strong id="hpText">200 / 200</strong>
+      </div>
+      <div class="integrity-bar"><i id="hpFill"></i><span class="integrity-shine"></span></div>
+    </div>
+    <div id="bossWrap" class="boss-wrap hidden">
+      <div class="boss-label"><span>ЛЕДЯНАЯ КОСАТКА</span><strong id="bossHpText"></strong></div>
+      <div class="boss-bar"><i id="bossFill"></i></div>
+    </div>
+  </div>
+
+  <div id="readyWrap" class="ready-wrap hidden">
+    <button id="readyBtn" class="ready-btn">
+      <span>НАЧАТЬ ВОЛНУ</span>
+      <small>+5 рыбы за смелость</small>
+    </button>
+  </div>
+
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+
+  <div id="placementBar" class="placement-bar hidden">
+    <div class="placement-copy">
+      <span class="placement-kicker">РАЗМЕЩЕНИЕ</span>
+      <strong id="placementName">Гарпун</strong>
+      <span id="placementHint">Коснись подходящего места</span>
+    </div>
+    <button id="cancelPlacement" class="ghost-btn">ОТМЕНА</button>
+  </div>
+
+  <div id="joystick" class="joystick" aria-label="Джойстик движения">
+    <div class="joystick-ring"></div>
+    <div id="joyKnob" class="joystick-knob">
+      <span></span>
+    </div>
+    <div class="joystick-label">ДВИЖЕНИЕ</div>
+  </div>
+
+  <div class="action-cluster">
+    <button id="buildBtn" class="build-btn">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20v-4l7-7M11 9l3 3M14 6l2-2 4 4-2 2M5 16h3v3H5z"/></svg>
+      <span>СТРОИТЬ</span>
+    </button>
+    <div class="abilities">
+      <button id="dashBtn" class="ability ability-dash" aria-label="Рывок">
+        <span class="ability-cd" id="dashCd"></span>
+        <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M17 5 6 18h8l-1 9 13-15h-8l1-7Z"/></svg>
+        <small>РЫВОК</small>
+      </button>
+      <button id="snowballBtn" class="ability ability-snow" aria-label="Снежок">
+        <span class="ability-cd" id="snowballCd"></span>
+        <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="9"/><path d="M16 6v20M6 16h20M9 9l14 14M23 9 9 23"/></svg>
+        <small>СНЕЖОК</small>
+      </button>
+    </div>
+  </div>
+
+  <div id="inspectPanel" class="inspect-panel hidden">
+    <button id="inspectClose" class="panel-close" aria-label="Закрыть">×</button>
+    <div id="inspectIcon" class="inspect-icon"></div>
+    <div class="inspect-copy">
+      <div class="inspect-title-row">
+        <strong id="inspectName">Гарпун</strong>
+        <span id="inspectLevel" class="level-tag">УР. 1</span>
+      </div>
+      <div id="inspectStats" class="inspect-stats"></div>
+    </div>
+    <div class="inspect-actions">
+      <button id="upgradeBtn" class="primary-btn small">УЛУЧШИТЬ <span id="upgradeCost">0</span></button>
+      <button id="sellBtn" class="ghost-btn small">ПРОДАТЬ <span id="sellValue">0</span></button>
+    </div>
+  </div>
+
+  <div id="drawerBackdrop" class="drawer-backdrop"></div>
+  <section id="drawer" class="drawer" aria-label="Магазин">
+    <div class="drawer-head">
+      <div class="drawer-title">
+        <span class="drawer-kicker">АРСЕНАЛ</span>
+        <strong>СТРОЙКА И ПРОКАЧКА</strong>
+      </div>
+      <div id="tabs" class="tabs">
+        <button class="tab active" data-tab="turrets">ТУРЕЛИ</button>
+        <button class="tab" data-tab="traps">ЛОВУШКИ</button>
+        <button class="tab" data-tab="floe">ЛЁД</button>
+        <button class="tab" data-tab="seal">ТЮЛЕНЬ</button>
+      </div>
+      <button id="closeDrawer" class="panel-close" aria-label="Закрыть магазин">×</button>
+    </div>
+    <div class="drawer-summary">
+      <span id="drawerTip">Турели атакуют косаток автоматически. Выбери карточку, затем коснись льда.</span>
+      <span class="drawer-fish"><svg viewBox="0 0 32 24" aria-hidden="true"><path d="M3 12c4-6 10-8 16-5 4 2 7 4 10 5-3 2-6 4-10 5-6 3-12 1-16-5Z"/><path d="M3 12 0 6v12l3-6Z"/><circle cx="22" cy="10" r="1.3"/></svg><b id="drawerFish">0</b></span>
+    </div>
+    <div id="cardList" class="card-list"></div>
+  </section>
+
+  <div id="menu" class="overlay menu-overlay">
+    <div class="menu-vignette"></div>
+    <div class="menu-card">
+      <div class="eyebrow"><span></span> АРКТИЧЕСКАЯ ОБОРОНА</div>
+      <h1>ЛЕДЯНОЙ<br><em>СТРАЖ</em></h1>
+      <p class="menu-lead">Последний тюлень. Последняя льдина. Косатки уже близко. Строй турели, ставь ловушки и не дай океану победить.</p>
+      <div class="menu-actions">
+        <button id="startBtn" class="start-btn">
+          <span>НАЧАТЬ ОБОРОНУ</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </button>
+        <div class="best-score">ЛУЧШАЯ ВОЛНА <b id="bestWave">0</b></div>
+      </div>
+      <div class="feature-row">
+        <div class="feature"><b>11</b><span>турелей и пушек</span></div>
+        <div class="feature"><b>7</b><span>видов ловушек</span></div>
+        <div class="feature"><b>13</b><span>улучшений</span></div>
+      </div>
+      <div class="menu-foot">
+        <span><i class="key">WASD</i> движение</span>
+        <span><i class="key">SPACE</i> рывок</span>
+        <span><i class="key">F</i> снежок</span>
+        <span><i class="key">B</i> стройка</span>
+      </div>
+      <p class="motion-note">Телефон и планшет: стик, касания, необязательный наклон. На iOS разрешение на датчик запрашивается в паузе.</p>
+    </div>
+    <div class="menu-seal" aria-hidden="true">
+      <div class="ice-disc"></div>
+      <div class="seal-figure">
+        <span class="fin fin-a"></span><span class="fin fin-b"></span>
+        <span class="seal-body"></span><span class="seal-head"></span>
+        <span class="scarf"></span><span class="eye"></span><span class="nose"></span>
+      </div>
+    </div>
+  </div>
+
+  <div id="pauseMenu" class="overlay pause-overlay hidden">
+    <div class="pause-card">
+      <div class="eyebrow"><span></span> ПЕРЕДЫШКА</div>
+      <h2>ПАУЗА</h2>
+      <p>Лёд трещит, но время остановилось. Приведи оборону в порядок.</p>
+      <div class="pause-actions">
+        <button id="resumeBtn" class="primary-btn">ПРОДОЛЖИТЬ</button>
+        <button id="soundBtn" class="secondary-btn">ЗВУК: ВКЛ</button>
+        <button id="tiltBtn" class="secondary-btn">НАКЛОН: ВЫКЛ</button>
+        <button id="helpBtn" class="secondary-btn">КАК ИГРАТЬ</button>
+        <button id="restartBtn" class="ghost-btn">ЗАНОВО</button>
+        <button id="quitBtn" class="ghost-btn">В МЕНЮ</button>
+      </div>
+      <div class="pause-tip">Подсказка: ловушки ставятся в прибрежную воду. Турели — на лёд.</div>
+    </div>
+  </div>
+
+  <div id="helpPanel" class="overlay help-overlay hidden">
+    <div class="help-card">
+      <button id="helpClose" class="panel-close" aria-label="Закрыть">×</button>
+      <div class="eyebrow"><span></span> ПОЛЕВОЙ УСТАВ</div>
+      <h2>КАК ИГРАТЬ</h2>
+      <div class="help-grid">
+        <div><b>01</b><h3>Двигайся</h3><p>Стик, WASD или наклон. Собирай рыбу, уклоняйся от косаток-охотников.</p></div>
+        <div><b>02</b><h3>Строй</h3><p>Открой «Строить», выбери турель и коснись льда. Ловушки — в воду у кромки.</p></div>
+        <div><b>03</b><h3>Прокачивай</h3><p>Коснись турели, чтобы улучшить её. Вкладки «Лёд» и «Тюлень» усиливают всю оборону.</p></div>
+        <div><b>04</b><h3>Держись</h3><p>Косатки грызут лёд. Охотники прыгают на остров. Не дай прочности упасть до нуля.</p></div>
+      </div>
+      <div class="help-keys">
+        <span>Рывок лечит от захвата и бьёт охотников</span>
+        <span>Снежок замедляет цель</span>
+        <span>«Готов» ускоряет волну и даёт рыбу</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="gameOver" class="overlay over-overlay hidden">
+    <div class="over-card">
+      <div class="crack-mark" aria-hidden="true"></div>
+      <div class="eyebrow"><span></span> ЛЬДИНА РАЗБИТА</div>
+      <h2>ОКЕАН<br><em>ПОБЕДИЛ</em></h2>
+      <p>Но тюлень ещё всплывёт. Соберись и попробуй снова.</p>
+      <div class="over-stats">
+        <div><span>ВОЛНА</span><b id="overWave">1</b></div>
+        <div><span>КОСАТОК</span><b id="overKills">0</b></div>
+        <div><span>ЛУЧШИЙ</span><b id="overBest">1</b></div>
+      </div>
+      <div class="over-actions">
+        <button id="againBtn" class="start-btn"><span>ЕЩЁ РАЗ</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+        <button id="toMenuBtn" class="ghost-btn">В МЕНЮ</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="game.js" defer></script>
+</body>
+</html>
